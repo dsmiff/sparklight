@@ -1,12 +1,10 @@
-import logging
 import os
 import sys
 import re
-from subprocess import check_call
+from subprocess import call
 from collections import OrderedDict
+from sparklight.lightutils import check_directory
 import sparklight as sl
-
-logger = logging.getLogger(__name__)
 
 ##__________________________________________________________________||
 class SparkJobSet(object):
@@ -23,6 +21,7 @@ class SparkJobSet(object):
                  driver_class_path=None,
                  spark_master=None,
                  certificate=False,
+                 logger=None,
                  dry_run=False,
                  other_args=None):
 
@@ -37,6 +36,8 @@ class SparkJobSet(object):
         self.err_file = str(err_file)
         self.log_dir = os.path.realpath(str(log_dir))
         self.log_file = str(log_file)
+        self.dirs = [self.out_dir, self.err_dir, self.log_dir]
+        self.cmds = [ ]        
         self.cores = cores
         self.memory = memory
         self.disk = disk
@@ -44,11 +45,13 @@ class SparkJobSet(object):
         self.spark_master = spark_master
         self.certificate = certificate
         self.other_args = other_args
+        self.logger = logger
         self.dry_run = dry_run
         self.init_spark_settings()
-
+        self.init_spark_commands()
+        self.check_dirs(self.dirs)
+        
         self.jobs = OrderedDict()
-        self.cmds = [ ]
 
     def __getitem__(self, i):
         if isinstance(i, int):
@@ -63,26 +66,35 @@ class SparkJobSet(object):
     def __len__(self):
         return len(self.jobs)
 
+    def check_dirs(self, dirs):
+        for directory in dirs:
+            if directory: check_directory(directory)
+    
     def init_spark_settings(self):
         self.master_cmd = ['--master']
         self.driver_class_cmd=['--driver-class-path']
         self.driver_memory_cmd = ['--driver-memory']
         self.executor_cores_cmd = ['--executor-cores']
-        self.conf_cmd = ['--conf spark.driver.maxResultSize=2g']
+
+    def init_spark_commands(self):
+        self.make_master_cmd()
+        self.make_driver_class_cmd()
+        self.make_driver_memory_cmd()
+        self.make_cores_cmd()
         
     def make_master_cmd(self):
-        if not self.master:
+        if not self.spark_master:
             self.master_cmd = None
         else:
-            self.master_cmd = generate_cmd(
-                self.master_cmd, self.master)
+            self.master_cmd = SparkJobSet.generate_cmd(
+                self.master_cmd, self.spark_master)
             self.cmds.append(self.master_cmd)
             
     def make_driver_class_cmd(self):
         if not self.driver_class_path:
             self.driver_class_cmd = None
         else:
-            self.driver_class_cmd = generate_cmd(
+            self.driver_class_cmd = SparkJobSet.generate_cmd(
                 self.driver_class_cmd, self.driver_class_path)
             self.cmds.append(self.driver_class_cmd)
             
@@ -90,7 +102,7 @@ class SparkJobSet(object):
         if not self.memory:
             self.driver_memory_cmd = None
         else:
-            self.driver_memory_cmd = generate_cmd(
+            self.driver_memory_cmd = SparkJobSet.generate_cmd(
                 self.driver_memory_cmd, self.memory)
             self.cmds.append(self.driver_memory_cmd)
             
@@ -98,9 +110,15 @@ class SparkJobSet(object):
         if not self.cores:
             self.executor_cores_cmd = None
         else:
-            self.executor_cores_cmd = generate_cmd(
+            self.executor_cores_cmd = SparkJobSet.generate_cmd(
                 self.executor_cores_cmd, self.cores)
             self.cmds.append(self.executor_cores_cmd)
+
+    def generate_metadata(self):
+        self.logger.info("Master: {master} ".format(master=self.spark_master))
+        self.logger.info("Cores: {cores} ".format(cores=self.cores))
+        self.logger.info("Memory: {mem} ".format(mem=self.memory))
+        self.logger.info("Executable: {exe} ".format(exe=self.exe))
             
     def add_job(self, job):
         if not isinstance(job, sl.SparkJob):
@@ -125,23 +143,29 @@ class SparkJobSet(object):
         if value:
             if isinstance(value, list):
                 value = ' '.join(value)
-            cmd = '{0}{1}'.format(' '.join(main_cmd), value)
+            cmd = '{0} {1}'.format(' '.join(main_cmd), value)
         else:
             cmd = '{0}'.format(' '.join(main_cmd))
         return cmd
     
     @staticmethod
     def dry_run_cmds(cmds):
-        print ' '.join(cmds)
+        print "Command to run: ", cmds
         
     def submit(self):
-        cmd_args = self.parse_cmd_args()
-        cmd_to_execute = ['spark-submit', cmd_args]
 
+        self.generate_metadata()
+        cmd_args = self.parse_cmd_args()
+        spark_execute_command = 'spark-submit'
+        cmd_to_execute = '{0} {1}'.format(spark_execute_command, cmd_args)
+        
         if self.dry_run:
             SparkJobSet.dry_run_cmds(cmd_to_execute)
+            self.logger.info("Exiting the service for a dry run")
             sys.exit("Exiting the service from a dry run")
         
-        check_call(cmd_to_execute)
+        call(cmd_to_execute, shell=True)
+
+        self.logger.info("Done")
             
 ##__________________________________________________________________||

@@ -1,6 +1,3 @@
-'''
-Run as : python cars_submit.py
-'''
 import os
 import sys
 import logging
@@ -9,7 +6,7 @@ import datetime
 try:
     import sparklight as sl
 except ImportError:
-    raise "Unable to import sparklight"
+    raise "Unable to import spark-light"
 
 ##__________________________________________________________________||
 logger = logging.getLogger(__name__)
@@ -31,21 +28,22 @@ args = parser.parse_args()
 
 ##__________________________________________________________________||
 log_stem = 'cars'
-
+LOG_STORE = '/tmp/cars_spark/logs'
 ##__________________________________________________________________||
 # Declare SparkJobSet
 job_set = sl.SparkJobSet(
     exe = 'test_spark.py',
     copy_exe = False,
     filename = os.path.join('./', 'cars_job.spark'),
-    out_dir = './', out_file = log_stem + '.out',
-    err_dir = './', err_file = log_stem + '.err',
-    log_dir = './', log_file = log_stem + '.log',
+    out_dir = LOG_STORE, out_file = log_stem + '.out',
+    err_dir = LOG_STORE, err_file = log_stem + '.err',
+    log_dir = LOG_STORE, log_file = log_stem + '.log',
     cores = 1,
-    memory = '500MB',
+    memory = '1g',
     disk = '10000',
     certificate = True,
     spark_master='local',
+    logger=logger,
     dry_run=False,
 )
 
@@ -60,6 +58,7 @@ job_set.add_job(job)
 
 ##__________________________________________________________________||
 for job in job_set:
+    logger.info("Job has name: {name}".format(name=job.name))
     print("Job has name: ", job.name)
 
 ##__________________________________________________________________||    

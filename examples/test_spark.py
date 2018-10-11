@@ -1,10 +1,14 @@
 import os
+import logging
 import argparse
 import time
 from operator import add
 import arrow
 from pyspark.sql import SparkSession
 
+logger = logging.getLogger(__name__)
+
+##__________________________________________________________________||
 if __name__ == '__main__':
     
 
@@ -24,5 +28,7 @@ if __name__ == '__main__':
         .count()\
         .show()
     
-
+    logger.info("Result of the job :", cars)
     print cars
+
+##__________________________________________________________________||    
