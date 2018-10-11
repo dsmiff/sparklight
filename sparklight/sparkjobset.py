@@ -23,7 +23,7 @@ class SparkJobSet(object):
                  certificate=False,
                  logger=None,
                  dry_run=False,
-                 other_args=None):
+                 other_args={}):
 
         super(SparkJobSet, self).__init__()
         self.exe = exe
@@ -49,6 +49,7 @@ class SparkJobSet(object):
         self.dry_run = dry_run
         self.init_spark_settings()
         self.init_spark_commands()
+        self.construct_other_args()
         self.check_dirs(self.dirs)
         
         self.jobs = OrderedDict()
@@ -66,6 +67,14 @@ class SparkJobSet(object):
     def __len__(self):
         return len(self.jobs)
 
+    def construct_other_args(self):
+        if not self.other_args:
+            return self.other_args
+
+        for flag, value in self.other_args.iteritems():
+            cmd = '--{flag} {value}'.format(flag=flag, value=value)
+            self.cmds.append(cmd)        
+    
     def check_dirs(self, dirs):
         for directory in dirs:
             if directory: check_directory(directory)

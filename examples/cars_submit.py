@@ -20,15 +20,20 @@ logger.addHandler(handler)
 
 ##__________________________________________________________________||
 parser = argparse.ArgumentParser()
-parser.add_argument('-d', '--data-path', help='Path to the directory containing the data')
+parser.add_argument('-d', '--data-path', help='Path to the directory containing the data', default=None)
 parser.add_argument('-c', '--convert', help="Convert training data in from PySpark pickle format to numpy 'npz' format.", default=False)
 parser.add_argument('-t', '--testsetids', help="List of test set session ids in RDD", default=None)
-parser.add_argument('-o', '--outdir', help='Output directory')
+parser.add_argument('-o', '--outdir', help='Output directory', default=None)
 args = parser.parse_args()
 
 ##__________________________________________________________________||
 log_stem = 'cars'
 LOG_STORE = '/tmp/cars_spark/logs'
+
+##__________________________________________________________________||
+other_args = {'input' : args.data_path,
+              'output': args.outdir}
+
 ##__________________________________________________________________||
 # Declare SparkJobSet
 job_set = sl.SparkJobSet(
@@ -44,7 +49,8 @@ job_set = sl.SparkJobSet(
     certificate = True,
     spark_master='local',
     logger=logger,
-    dry_run=False,
+    other_args=other_args,
+    dry_run=True,
 )
 
 job = sl.SparkJob(
