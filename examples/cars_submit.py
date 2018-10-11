@@ -1,3 +1,6 @@
+'''
+Run as : python cars_submit.py
+'''
 import os
 import sys
 import logging
