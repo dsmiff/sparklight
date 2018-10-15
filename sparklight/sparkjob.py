@@ -33,6 +33,8 @@ class SparkJob(object):
 
     @manager.setter
     def manager(self, manager):
+        if not isinstance(manager, sl.JobSet):
+            raise TypeError("Instance type incorrect")
         self._manager = manager
     
 ##__________________________________________________________________||

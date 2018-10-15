@@ -13,6 +13,7 @@ class SparkJobSet(object):
                  exe,
                  copy_exe=True,
                  setup_script=None,
+                 source_setup=False,
                  filename='jobs.spark',
                  out_dir='logs', out_file='tmp.out',
                  err_dir='logs', err_file='tmp.err',
@@ -29,6 +30,7 @@ class SparkJobSet(object):
         self.exe = exe
         self.copy_exe= copy_exe
         self.setup_script = setup_script
+        self.source_setup = source_setup
         self.filename = os.path.abspath(filename)
         self.out_dir = os.path.realpath(str(out_dir))
         self.out_file = str(out_file)
